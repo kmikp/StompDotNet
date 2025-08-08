@@ -1,4 +1,5 @@
-﻿using System.Net;
+﻿using System.Collections.Generic;
+using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -33,7 +34,7 @@ namespace StompDotNet
         /// <param name="endpoint"></param>
         /// <param name="cancellationToken"></param>
         /// <returns></returns>
-        public abstract ValueTask<StompConnection> OpenAsync(EndPoint endpoint, CancellationToken cancellationToken);
+        public abstract ValueTask<StompConnection> OpenAsync(EndPoint endpoint, IEnumerable<KeyValuePair<string, string>> headers, CancellationToken cancellationToken);
 
         /// <summary>
         /// Opens the underlying connection.
@@ -41,11 +42,11 @@ namespace StompDotNet
         /// <param name="transport"></param>
         /// <param name="cancellationToken"></param>
         /// <returns></returns>
-        protected async ValueTask<StompConnection> OpenAsync(StompTransport transport, CancellationToken cancellationToken)
+        protected async ValueTask<StompConnection> OpenAsync(StompTransport transport, IEnumerable<KeyValuePair<string, string>> headers, CancellationToken cancellationToken)
         {
             var connection = new StompConnection(transport, options, logger);
             await connection.OpenAsync(cancellationToken);
-            await connection.ConnectAsync(null, null, null, null, cancellationToken);
+            await connection.ConnectAsync(null, null, null, headers, cancellationToken);
             return connection;
         }
 

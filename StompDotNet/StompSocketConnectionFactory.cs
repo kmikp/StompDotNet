@@ -1,4 +1,5 @@
-﻿using System.Net;
+﻿using System.Collections.Generic;
+using System.Net;
 using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
@@ -28,6 +29,7 @@ namespace StompDotNet
         public StompSocketConnectionFactory(ProtocolType protocolType, StompConnectionOptions options, ILogger logger) : base(options, logger)
         {
             this.protocolType = protocolType;
+            this.logger = logger;
         }
 
         /// <summary>
@@ -36,7 +38,7 @@ namespace StompDotNet
         /// <param name="endpoint"></param>
         /// <param name="cancellationToken"></param>
         /// <returns></returns>
-        public override async ValueTask<StompConnection> OpenAsync(EndPoint endpoint, CancellationToken cancellationToken)
+        public override async ValueTask<StompConnection> OpenAsync(EndPoint endpoint, IEnumerable<KeyValuePair<string, string>> headers, CancellationToken cancellationToken)
         {
             var ip = endpoint as IPEndPoint;
             if (ip == null)
@@ -44,7 +46,7 @@ namespace StompDotNet
 
             var socket = new Socket(endpoint.AddressFamily, SocketType.Stream, protocolType);
             await socket.ConnectAsync(endpoint, cancellationToken);
-            return await OpenAsync(new StompSocketTransport(ip, socket, new StompBinaryProtocol(), logger),  cancellationToken);
+            return await OpenAsync(new StompSocketTransport(ip, socket, new StompBinaryProtocol(), logger), headers, cancellationToken);
         }
 
     }

@@ -19,7 +19,6 @@ namespace StompDotNet
     {
 
         readonly StompBinaryProtocol protocol;
-        readonly ILogger logger;
 
         /// <summary>
         /// Initializes a new instance.
@@ -30,7 +29,6 @@ namespace StompDotNet
             base(logger)
         {
             this.protocol = protocol ?? throw new ArgumentNullException(nameof(protocol));
-            this.logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
         /// <summary>

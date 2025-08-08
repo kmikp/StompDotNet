@@ -324,7 +324,10 @@ namespace StompDotNet
         /// <returns></returns>
         async ValueTask OnSendAsync(StompFrame frame, CancellationToken cancellationToken)
         {
-            logger.LogDebug("Sending STOMP frame: {Command}", frame.Command);
+            if (frame.Command == StompCommand.Heartbeat)
+                logger.LogTrace("Sending heartbeat");
+            else
+                logger.LogDebug("Sending STOMP frame: {Command}", frame.Command);
 
             await transport.SendAsync(frame, cancellationToken);
         }
@@ -595,7 +598,7 @@ namespace StompDotNet
             if (options.MaximumVersion >= StompVersion.Stomp_1_1)
                 l.Add("1.1");
             if (options.MaximumVersion >= StompVersion.Stomp_1_2)
-                l.Add("1.1");
+                l.Add("1.2");
 
             return string.Join(",", l);
         }
@@ -608,8 +611,8 @@ namespace StompDotNet
         string StompVersionHeaderToString(StompVersion version) => version switch
         {
             StompVersion.Stomp_1_0 => "1.0",
-            StompVersion.Stomp_1_1 => "1.0",
-            StompVersion.Stomp_1_2 => "1.0",
+            StompVersion.Stomp_1_1 => "1.1",
+            StompVersion.Stomp_1_2 => "1.2",
             _ => throw new NotImplementedException(),
         };
 
@@ -665,6 +668,12 @@ namespace StompDotNet
                 throw new StompErrorFrameException(result);
             if (result.Command != StompCommand.Receipt)
                 throw new StompException("Did not receive SEND receipt.");
+        }
+
+        public async ValueTask HeartbeatAsync(CancellationToken cancellationToken)
+        {
+            var frame = new StompFrame(StompCommand.Heartbeat, headers: null, body: null);
+            await SendFrameAsync(frame, cancellationToken);
         }
 
         /// <summary>

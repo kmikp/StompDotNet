@@ -3,7 +3,6 @@
 
     public enum StompCommand
     {
-
         Unknown,
         Connect,
         Stomp,
@@ -20,7 +19,7 @@
         Message,
         Receipt,
         Error,
-
+        Heartbeat
     }
 
 }

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Net;
 using System.Net.WebSockets;
 using System.Threading;
@@ -64,7 +65,7 @@ namespace StompDotNet
         /// <param name="endpoint"></param>
         /// <param name="cancellationToken"></param>
         /// <returns></returns>
-        public override async ValueTask<StompConnection> OpenAsync(EndPoint endpoint, CancellationToken cancellationToken)
+        public override async ValueTask<StompConnection> OpenAsync(EndPoint endpoint, IEnumerable<KeyValuePair<string, string>> headers, CancellationToken cancellationToken)
         {
             if (endpoint is null)
                 throw new ArgumentNullException(nameof(endpoint));
@@ -81,7 +82,7 @@ namespace StompDotNet
             await socket.ConnectAsync(uri.Uri, cancellationToken);
 
             // return new connection
-            return await OpenAsync(new StompWebSocketTransport(endpoint, socket, new StompBinaryProtocol(), logger), cancellationToken);
+            return await OpenAsync(new StompWebSocketTransport(endpoint, socket, new StompBinaryProtocol(), logger), headers, cancellationToken);
         }
 
     }

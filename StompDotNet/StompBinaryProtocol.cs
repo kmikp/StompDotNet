@@ -123,6 +123,10 @@ namespace StompDotNet
             if (sequence.TryReadTo(out ReadOnlySequence<byte> itemBytes, (byte)'\n') == false)
                 return false;
 
+            // Received heartbeat
+            if (itemBytes.IsEmpty)
+                return true;
+
             // if so, it should be the command name
             if (TryParseCommand(Encoding.UTF8.GetString(itemBytes).TrimEnd(), out command) == false)
                 throw new StompProtocolException("Cannot parse STOMP command.");
@@ -306,6 +310,8 @@ namespace StompDotNet
                 case StompCommand.Error:
                     writer.Write(COMMAND_ERROR);
                     break;
+                case StompCommand.Heartbeat:
+                    break;
                 default:
                     throw new StompProtocolException("Unknown command.");
             }
@@ -323,8 +329,11 @@ namespace StompDotNet
             writer.Write(BYTE_LF);
 
             // body followed by NULL
-            writer.Write(frame.Body.Span);
-            writer.Write(BYTE_NULL);
+            if (frame.Command != StompCommand.Heartbeat)
+            {
+                writer.Write(frame.Body.Span);
+                writer.Write(BYTE_NULL);
+            }
         }
 
         void WriteEscapedHeaderValue(ArrayBufferWriter<byte> writer, string value)
