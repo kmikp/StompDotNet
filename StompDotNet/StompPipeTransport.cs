@@ -77,21 +77,20 @@ namespace StompDotNet
                         break;
 
                     // attempt to parse frame from data currently available
-                    if (TryReadFrame(buffer, out var frame, out var position) == false)
+                    while (TryReadFrame(buffer, out var frame, out var position))
                     {
-                        reader.AdvanceTo(buffer.Start, buffer.End); // record no movement
-                        continue;
+                        // handle the received frame
+                        await writer.WriteAsync(frame, cancellationToken);
+                        
+                        // no more data remaining to be processed
+                        if (result.IsCompleted)
+                            writer.Complete();
+                        
+                        buffer = buffer.Slice(position);
                     }
-
-                    // handle the received frame
-                    await writer.WriteAsync(frame, cancellationToken);
-
-                    // no more data remaining to be processed
-                    if (result.IsCompleted)
-                        writer.Complete();
-
-                    // record that we read the frame's bytes
-                    reader.AdvanceTo(position, result.Buffer.End);
+                    
+                    // record that we read the frames' bytes
+                    reader.AdvanceTo(buffer.Start, buffer.End);
                 }
             }
             finally
