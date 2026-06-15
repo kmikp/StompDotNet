@@ -1,5 +1,6 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading;
@@ -84,6 +85,7 @@ namespace StompDotNet
         CancellationTokenSource runnerCts;
         StompVersion version;
         string session;
+        IReadOnlyList<KeyValuePair<string, string>> connectedHeaders = [];
         int prevReceiptId = 0;
         int prevSubscriptionId = 0;
         int prevTransactionId = 0;
@@ -105,6 +107,21 @@ namespace StompDotNet
         /// Invoked when the state of the connection is changed.
         /// </summary>
         public event StompConnectionStateChangeEventHandler StateChanged;
+
+        /// <summary>
+        /// Gets headers returned by the CONNECTED frame.
+        /// </summary>
+        public IReadOnlyList<KeyValuePair<string, string>> ConnectedHeaders => connectedHeaders;
+
+        /// <summary>
+        /// Gets the timestamp of the most recent data sent on this connection.
+        /// </summary>
+        public long LastSentTimestamp { get; private set; } = Stopwatch.GetTimestamp();
+
+        /// <summary>
+        /// Gets the timestamp of the most recent data received on this connection.
+        /// </summary>
+        public long LastReceivedTimestamp { get; private set; } = Stopwatch.GetTimestamp();
 
         /// <summary>
         /// Invokes the StateChanged event.
@@ -330,6 +347,7 @@ namespace StompDotNet
                 logger.LogDebug("Sending STOMP frame: {Command}", frame.Command);
 
             await transport.SendAsync(frame, cancellationToken);
+            LastSentTimestamp = Stopwatch.GetTimestamp();
         }
 
         /// <summary>
@@ -372,6 +390,14 @@ namespace StompDotNet
         /// <returns></returns>
         async ValueTask OnReceiveAsync(StompFrame frame, CancellationToken cancellationToken)
         {
+            LastReceivedTimestamp = Stopwatch.GetTimestamp();
+
+            if (frame.Command == StompCommand.Heartbeat)
+            {
+                logger.LogTrace("Received heartbeat");
+                return;
+            }
+
             logger.LogDebug("Received STOMP frame: {Command}", frame.Command);
 
             // route the message to any registered routers
@@ -583,6 +609,7 @@ namespace StompDotNet
 
             version = result.GetHeaderValue("version") is string _version ? ParseStompVersionHeader(_version) : StompVersion.Stomp_1_0;
             session = result.GetHeaderValue("session");
+            connectedHeaders = new List<KeyValuePair<string, string>>(result.Headers);
             logger.LogInformation("STOMP connection established: Version={Version} Session={Session}", StompVersionHeaderToString(version), session);
         }
 

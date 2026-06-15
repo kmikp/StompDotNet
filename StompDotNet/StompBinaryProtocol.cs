@@ -3,12 +3,10 @@ using System.Buffers;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-
 using StompDotNet.Internal;
 
 namespace StompDotNet
 {
-
     /// <summary>
     /// Provides for reading and writing of StompFrames across a binary connection.
     /// </summary>
@@ -54,18 +52,25 @@ namespace StompDotNet
             frame = new StompFrame(StompCommand.Unknown, null, null);
 
             StompCommand command;
-            List<KeyValuePair<string, string>> headers = new List<KeyValuePair<string, string>>();
+            List<KeyValuePair<string, string>> headers = [];
             Memory<byte> body = null;
 
             // attempt to read initial command line
             if (TryReadCommand(ref sequence, out command) == false)
                 return false;
 
+            if (command == StompCommand.Heartbeat)
+            {
+                frame = new StompFrame(command, null, null);
+                return true;
+            }
+
             // read headers
             while (sequence.End == false)
             {
                 // read the current header
-                if (TryReadHeader(ref sequence, out var header, command != StompCommand.Connect && command != StompCommand.Connected) == false)
+                if (TryReadHeader(ref sequence, out var header,
+                        command != StompCommand.Connect && command != StompCommand.Connected) == false)
                     return false;
 
                 // null key indicates end of headers
@@ -125,7 +130,10 @@ namespace StompDotNet
 
             // Received heartbeat
             if (itemBytes.IsEmpty)
+            {
+                command = StompCommand.Heartbeat;
                 return true;
+            }
 
             // if so, it should be the command name
             if (TryParseCommand(Encoding.UTF8.GetString(itemBytes).TrimEnd(), out command) == false)
@@ -186,7 +194,7 @@ namespace StompDotNet
                 default:
                     command = StompCommand.Unknown;
                     return false;
-            };
+            }
         }
 
         /// <summary>
@@ -195,7 +203,8 @@ namespace StompDotNet
         /// <param name="sequence"></param>
         /// <param name="header"></param>
         /// <returns></returns>
-        bool TryReadHeader(ref SequenceReader<byte> sequence, out KeyValuePair<string, string> header, bool escapeCrLfCol)
+        bool TryReadHeader(ref SequenceReader<byte> sequence, out KeyValuePair<string, string> header,
+            bool escapeCrLfCol)
         {
             header = new KeyValuePair<string, string>(null, null);
 
@@ -367,7 +376,5 @@ namespace StompDotNet
                 }
             }
         }
-
     }
-
 }
