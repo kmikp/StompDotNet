@@ -34,7 +34,7 @@ namespace StompDotNet.Sample.Console
         {
             var f = new StompWebSocketConnectionFactory(c => { c.Credentials = new NetworkCredential("admin", "admin"); }, logger);
             var e = new UriEndPoint(new Uri("ws://localhost:44112/websockets/messaging/websocket"));
-            connection = await f.OpenAsync(e, cancellationToken);
+            connection = await f.OpenAsync(e, [], cancellationToken);
             transaction = await connection.BeginAsync(cancellationToken: cancellationToken);
 
             cts = new CancellationTokenSource();
